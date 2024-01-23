@@ -8,31 +8,34 @@ editor: visual
 ```{r, warning = FALSE}
 library(readr)
 library(dplyr)
+library(ggplot2)
 games<- read_csv("new_games.csv")
 ```
-
-## 
-
 ```{r, warning=FALSE}
 #In lichess.com mostly players play rating games
 
-library(ggplot2)
+ games$type_label <- ifelse(games$rated, "Rated", "Unrated")
+df_percentage <- games %>%
+  group_by(type_label) %>%
+  summarise(percentage = n() / nrow(games) * 100)
 
-# Create a bar plot to show the percentage of rated and unrated games
-ggplot(games, aes(x = factor(rated), fill = rated)) +
-  geom_bar(position = "fill", color = "black", size = 0.5) +  # Add border to bars
-  geom_text(aes(label = scales::percent(..count../sum(..count..))), stat = "count",
-            position = position_fill(vjust = 0.5), size = 4, color = "white") +  # Customize text
-  scale_fill_manual(values = c("TRUE" = "#66c2a5", "FALSE" = "#fc8d62")) +  # Customize colors
-  xlab("Rated Games") +
-  ylab("Percentage") +
-  ggtitle("Percentage of Rated and Unrated Games") +  # Add title
-  theme_minimal() +
-  theme(legend.position = "none", axis.text.x=element_blank())  
+ggplot(df_percentage, aes(x = type_label, y = percentage, fill = type_label)) +
+  geom_bar(stat = "identity", color = "black", size = 0.5) +  # Add border to bars
+  geom_text(aes(label = sprintf("%.1f%%", percentage)),
+            position = position_stack(vjust = 0.5), size = 4, color = "white") +  
+  scale_fill_manual(values = c("Rated" = "#FFE4B5", "Unrated" = "#696969")) +  # Chessy colors
+  labs(title = "Percentage of Rated and Unrated Games",
+       x = "Game Type",
+       y = "Percentage") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  
+  theme(axis.title.y = element_text(margin = margin(r = 10)),
+        axis.text.x = element_text(size = 12),
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5)) +
+  theme_minimal()
 
 ```
-
-## 
+# 
 
 ```{r}
 # Top 10 openings with count > 200
@@ -47,8 +50,7 @@ ggplot(opening, aes(x = opening_name, y = count)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels for better readability
   coord_cartesian(ylim = c(0, max(opening$count) + 10))  # Adjust the y-axis limits to provide space for labels
 ```
-
-## 
+# 
 
 ```{r}
 # Create an empty vector to store playing styles
@@ -93,9 +95,31 @@ ggplot(plot_df, aes(x = Playing_Style, y = Count, fill = Playing_Style)) +
   labs(title = "Playing Style Distribution", x = "Playing Style", y = "Count") +
   theme_minimal() +
   scale_fill_manual(values = chess_colors)  # Apply custom colors
-```
 
-## 
+```
+# 
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+games<- read_csv("new_games.csv")
+games %>%
+  mutate(diff = abs(white_rating - black_rating),
+         classdif = case_when(
+           diff %/% 412 == 0 ~ "Fair",
+           diff %/% 412 == 1 ~ "Aggressive",
+           diff %/% 412 == 2 ~ "Assertive",
+           diff %/% 412 == 3 ~ "Unfair",
+           TRUE ~ as.character(diff %/% 412)
+         )) %>%
+  ggplot(aes(x = as.factor(classdif), y = turns)) +
+  geom_violin(fill = "skyblue", color = "blue", alpha = 0.7) +
+  geom_boxplot(width = 0.1, fill = "orange", color = "darkred", alpha = 0.7) +
+  labs(title = "Violin Plot", x = "Class Difference", y = "Time Control") +
+  theme_minimal()
+```
+# 
 
 ```{r}
 #types of wins either by black or white
@@ -105,7 +129,7 @@ ggplot(games, aes(x = victory_status, fill = winner)) +
   theme_classic()
 ```
 
-## 
+# 
 
 ```{r}
 # Load the necessary libraries
@@ -137,7 +161,7 @@ ggplot(increment,aes(x=increment_code,y=count))+geom_col()+
   labs(title = "Time Control") 
 ```
 
-## 
+# 
 
 ```{r}
 library(hexbin)

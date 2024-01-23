@@ -305,7 +305,185 @@ ggplot(games, aes(x = victory_style, fill = player_style)) +
 ```
 
 
+```{r}
+
+# Assuming your data frame is named 'games'
+library(ggplot2)
+library(dplyr)
+
+# Filter increments with count > 200
+increment <- filter(summarise(group_by(games, increment_code), count = n()), count > 200)
+
+# Filter games based on selected increments
+filtered_games <- games[games$increment_code %in% increment$increment_code, ]
+
+# Create a bar plot
+ggplot(filtered_games, aes(x = increment_code)) +
+  geom_bar(fill = "skyblue", color = "black") +
+  labs(title = "Time Control Distribution",
+       x = "Time Control",
+       y = "Game Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
+```
+
+
+```{r}
+
+# Calculate the percentage of each game type
+df_percentage <- games %>%
+  group_by(rated) %>%
+  summarise(percentage = n() / nrow(games) * 100)
+
+# Create a bar plot to show the percentage of rated and unrated games
+ggplot(df_percentage, aes(x = factor(rated), y = percentage, fill = factor(rated))) +
+  geom_bar(stat = "identity", color = "black", size = 0.5) +  # Add border to bars
+  geom_text(aes(label = sprintf("%.1f%%", percentage)),
+            position = position_stack(vjust = 0.5), size = 4, color = "white") +  # Customize text
+  scale_fill_manual(values = c("TRUE" = "#b11226", "FALSE" = "#EFEF26")) +  # Customize colors
+  labs(title = "Percentage of Rated and Unrated Games",
+       x = "Rated Games",
+       y = "Percentage") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  # Adjust y-axis scale
+  theme(axis.title.y = element_text(margin = margin(r = 10)),
+        axis.text.x = element_text(size = 12),
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5)) +
+  theme_minimal()
+
+
+
+
+```
+```{r}
+
+games$type_label <- ifelse(games$rated, "Rated", "Unrated")
+df_percentage <- games %>%
+  group_by(type_label) %>%
+  summarise(percentage = n() / nrow(games) * 100)
+
+ggplot(df_percentage, aes(x = type_label, y = percentage, fill = type_label)) +
+  geom_bar(stat = "identity", color = "black", size = 0.5) +  # Add border to bars
+  geom_text(aes(label = sprintf("%.1f%%", percentage)),
+            position = position_stack(vjust = 0.5), size = 4, color = "white") +  
+  scale_fill_manual(values = c("Rated" = "#FFE4B5", "Unrated" = "#696969")) +  # Chessy colors
+  labs(title = "Percentage of Rated and Unrated Games",
+       x = "Game Type",
+       y = "Percentage") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  
+  theme(axis.title.y = element_text(margin = margin(r = 10)),
+        axis.text.x = element_text(size = 12),
+        legend.position = "none",
+        plot.title = element_text(hjust = 0.5)) +
+  theme_minimal()
+
+```
+
+```{r}
+library(ggplot2)
+
+
+games <- games[is.finite(games$count), ]
+ggplot(games, aes(x = increment_code, y = count)) +
+  geom_violin(fill = "skyblue", color = "black") +
+  labs(title = "Time Control Distribution", x = "Time Control", y = "Game Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_log10()
+
+
+
+
+
+```
+```{r}
+
+library(ggplot2)
+library(dplyr)
+games <- games[is.finite(games$count), ]
+ggplot(games, aes(x = increment_code, y = count)) +
+  geom_violin(fill = "skyblue", color = "black", alpha = 0.7, trim = FALSE) +
+  labs(title = "Time Control Distribution", x = "Time Control", y = "Game Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_log10()
+unique(games$count)
+
+
+```
+```{r}
+
+if (!all(c("rated", "player_style") %in% colnames(games))) {
+  stop("Required columns not found in the 'games' data frame.")
+}
+
+
+games$type_label <- ifelse(games$rated, "Rated", "Unrated")
+games$player_label <- ifelse(games$player_style, "Offensive", "Defensive")
+
+
+if (!all(c("type_label", "player_label") %in% colnames(games))) {
+  stop("Error in creating new columns.")
+}
+
+# Calculate the percentage of each combination
+df_percentage <- games %>%
+  group_by(type_label, player_label) %>%
+  summarise(percentage = n() / nrow(games) * 100)
+
+
+ggplot(df_percentage, aes(x = type_label, y = percentage, fill = player_label)) +
+  geom_bar(stat = "identity", position = "stack", color = "black", size = 0.5) +  
+  #geom_text(aes(label = sprintf("%.1f%%", percentage)),
+           # position = position_stack(vjust = 0.5), size = 4, color = "white") +  
+  scale_fill_manual(values = c("Offensive" = "#ffcc66", "Defensive" = "#4169E1")) +  
+  labs(title = "Percentage of Rated and Unrated Games by Offensive/Defensive Players",
+       x = "Game Type",
+       y = "Percentage") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +  
+  theme(axis.title.y = element_text(margin = margin(r = 10)),
+        axis.text.x = element_text(size = 12),
+        legend.position = "top",  
+        plot.title = element_text(hjust = 0.5)) +
+  theme_minimal()
+
+
+
+```
+```{r}
+new_games |>
+  mutate(diff=abs(white_rating-black_rating)) |>
+  select(diff,turns) |>
+  mutate(classdif= diff%/%412)|>
+ggplot( aes(x = as.factor(classdif), y = turns)) +
+  geom_violin(fill = "skyblue", color = "blue", alpha = 0.7) +
+  geom_boxplot(width = 0.1, fill = "orange", color = "darkred", alpha = 0.7) +
+  labs(title = "Violin Plot", x = "Column 1", y = "Column 2") +
+  theme_minimal()
+
+
+```
+```{r}
+library(dplyr)
+library(ggplot2)
+
+new_games %>%
+  mutate(diff = abs(white_rating - black_rating),
+         classdif = case_when(
+           diff %/% 412 == 0 ~ "Fair",
+           diff %/% 412 == 1 ~ "Aggressive",
+           diff %/% 412 == 2 ~ "Assertive",
+           diff %/% 412 == 3 ~ "Unfair",
+           TRUE ~ as.character(diff %/% 412)
+         )) %>%
+  ggplot(aes(x = as.factor(classdif), y = turns)) +
+  geom_violin(fill = "skyblue", color = "blue", alpha = 0.7) +
+  geom_boxplot(width = 0.1, fill = "orange", color = "darkred", alpha = 0.7) +
+  labs(title = "Violin Plot", x = "Class Difference", y = "Time Control") +
+  theme_minimal()
+
+```
 
 
