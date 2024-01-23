@@ -3,7 +3,7 @@ title: 'lichess_dataset'
 format: revealjs
 editor: visual
 ---
-
+test
 # Introduction:
 In this analysis, we examine the dynamics of chess games on Lichess.com and we want to help find the exact moves by seeing similar patterns in the chess game and also know what things are important to online chess users.This issue will help to set up and manage the site. my data has 16 columns and 20058 rows.
 
