@@ -1,0 +1,311 @@
+---
+title: 'lichess_dataset'
+format: revealjs
+editor: visual
+---
+
+# Introduction:
+In this analysis, we examine the dynamics of chess games on Lichess.com and we want to help find the exact moves by seeing similar patterns in the chess game and also know what things are important to online chess users.This issue will help to set up and manage the site. my data has 16 columns and 20058 rows.
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+---
+
+```{r}
+library(readr)
+library(dplyr)
+games<- read_csv("new_games.csv")
+# games
+
+```
+## Rated Games Vs Unrated Games:
+```{r}
+#In lichess.com mostly players play rating games
+
+library(ggplot2)
+
+# Create a bar plot to show the percentage of rated and unrated games
+ggplot(games, aes(x = factor(rated), fill = rated)) +
+  geom_bar(position = "fill", color = "black", size = 0.5) +  # Add border to bars
+  geom_text(aes(label = scales::percent(..count../sum(..count..))), stat = "count",
+            position = position_fill(vjust = 0.5), size = 4, color = "white") +  # Customize text
+  scale_fill_manual(values = c("TRUE" = "#66c2a5", "FALSE" = "#fc8d62")) +  # Customize colors
+  xlab("Rated Games") +
+  ylab("Percentage") +
+  ggtitle("Percentage of Rated and Unrated Games") +  # Add title
+  theme_minimal() +
+  theme(legend.position = "none", axis.text.x=element_blank())  
+```
+---
+
+Rated Game: in chess, a "rated" game influences players' skill ratings. "TRUE" represents rated games, and "FALSE" represents unrated games, allowing players to choose between formal and friendly play. The majority of players engage in rated games, indicating a preference for formal play.
+
+```{r}
+#top 10 openings
+opening<-filter(summarise(group_by(games,opening_name), count=length(opening_name)),count>200)
+
+ggplot(opening,aes(x=opening_name,y=count))+geom_col()+coord_flip()+theme_classic()
+```
+## Openings:
+```{r}
+library(ggplot2)
+library(dplyr)
+```
+# Create an empty vector to store playing styles
+
+```{r}
+player_style <- character(length = nrow(games))
+
+# Loop through each row in the data frame
+for (i in 1:nrow(games)) {
+  all_moves <- unlist(strsplit(games$moves[i], " "))
+  
+  if ('e4' %in% all_moves  'b4' %in% all_moves) {
+    player_style[i] <- "offensive"
+  }  else if ('d4' %in% all_moves  'c4' %in% all_moves  'g3' %in% all_moves  'Nf3' %in% all_moves) {
+    player_style[i] <- "defensive"
+  } else {
+    player_style[i] <- "other"
+  }
+}
+
+# Add the player_style column to the data frame
+games$player_style <- player_style
+
+# Display the first few rows of the data frame to verify the new column
+# head(games)
+#plot the new column and compare Defensive and Offensive players.
+library(ggplot2)
+
+# Create a bar plot to visualize playing style distribution
+plot_data <- table(games$player_style)
+
+# Convert the table to a data frame for plotting
+plot_df <- as.data.frame(plot_data)
+colnames(plot_df) <- c("Playing_Style", "Count")
+```
+
+# Plot
+```{r}
+ggplot(plot_df, aes(x = Playing_Style, y = Count, fill = Playing_Style)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Playing Style Distribution", x = "Playing Style", y = "Count") +
+  theme_minimal()
+```
+
+```{r}
+
+# Top 10 openings with count > 200
+opening <- filter(summarise(group_by(games, opening_name), count = n()), count > 200)
+
+# Create a bar plot with labels
+ggplot(opening, aes(x = opening_name, y = count)) +
+  geom_col(fill = "skyblue") +
+  geom_text(aes(label = count), vjust = -0.5, color = "black", size = 3) +  # Add labels above the bars
+  theme_minimal() +
+  labs(title = "Top 10 Openings", x = "Opening Name", y = "Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels for better readability
+  coord_cartesian(ylim = c(0, max(opening$count) + 10))  # Adjust the y-axis limits to provide space for labels
+
+```
+---
+
+
+# Offensive VS Defensive Players:
+Openings: in chess refer to strategic initial moves. The bar plot showcases the top 10 most frequently played openings, revealing the diverse strategies chosen by players at the beginning of a game.
+```{r}
+
+
+# Create an empty vector to store playing styles
+player_style <- character(length = nrow(games))
+
+# Loop through each row in the data frame
+for (i in 1:nrow(games)) {
+  all_moves <- unlist(strsplit(games$moves[i], " "))
+  
+  if ('e4' %in% all_moves || 'b4' %in% all_moves) {
+    player_style[i] <- "offensive"
+  }  else if ('d4' %in% all_moves || 'c4' %in% all_moves || 'g3' %in% all_moves || 'Nf3' %in% all_moves) {
+    player_style[i] <- "defensive"
+  } else {
+    player_style[i] <- "other"
+  }
+}
+
+# Add the player_style column to the data frame
+games$player_style <- player_style
+
+# Display the first few rows of the data frame to verify the new column
+head(games)
+
+# Plot the new column and compare Defensive and Offensive players.
+library(ggplot2)
+
+# Create a bar plot to visualize playing style distribution
+plot_data <- table(games$player_style)
+
+# Convert the table to a data frame for plotting
+plot_df <- as.data.frame(plot_data)
+colnames(plot_df) <- c("Playing_Style", "Count")
+
+# Custom colors for chess theme
+chess_colors <- c("offensive" = "#ffcc66", "defensive" = "#6699ff", "other" = "#cccccc")
+
+# Plot with data labels and chess-themed colors
+ggplot(plot_df, aes(x = Playing_Style, y = Count, fill = Playing_Style)) +
+  geom_bar(stat = "identity") +
+  geom_text(aes(label = Count), position = position_stack(vjust = 0.5), size = 3, color = "black") +  # Add data labels
+  labs(title = "Playing Style Distribution", x = "Playing Style", y = "Count") +
+  theme_minimal() +
+  scale_fill_manual(values = chess_colors)  # Apply custom colors
+```
+---
+
+```{r}
+#top 10 opening moves
+open_move<-head(arrange(summarise(group_by(filter(games,winner=="white"),opening_eco),count=length(opening_eco)),desc(count)),10)
+open_move
+```
+
+The Top 10 Opening Moves: represent the initial strategic choices made by players as "white." The codes are abbreviations for specific chess moves, providing insights into popular and effective opening strategies. even u can access to lots of patterns by c=making chess moves in the form of code!.
+## Games Status:
+```{r}
+#types of wins either by black or white
+ggplot(games, aes(x = victory_status, fill = winner)) +
+  geom_bar(position = "dodge") +
+  scale_fill_manual(values = c("white" = "#FFE4B5", "black" = "#696969", "draw" = "#A9A9A9")) +  # Customize colors
+  theme_classic()
+
+
+```
+---
+
+```{r}
+#types of wins either by black or white
+ggplot(games,aes(x=victory_status,fill=winner))+geom_bar(position = "dodge")+theme_classic()
+```
+
+Victory_StatusThis bar plot illustrates the distribution of wins categorized by different victory statuses ("mate," "resign," etc.) and whether achieved by "black" or "white." It provides insights into the diverse ways games conclude on Lichess.com.
+## Time Control:
+```{r}
+# 10+0 increment is most often played
+increment<-filter(summarise(group_by(games,increment_code), count=length(increment_code)),count>200)
+ggplot(increment,aes(x=increment_code,y=count))+geom_col()+
+labs(title = "Time Control") 
+```
+
+---
+
+The Time Control:This plot illustrates time control preferences in chess games. "10+0" is the most common increment code, indicating games with a 10-minute base time and no additional time added per move. Understanding time controls is crucial in chess, as they influence the pace and strategy of the game.
+
+## Average of quality of players:
+```{r}
+library(hexbin)
+library(ggplot2)
+
+# Create a new column for player style if not already created
+games$player_style <- ifelse(grepl("e4|b4", games$opening_name, ignore.case = TRUE), "offensive",
+                              ifelse(grepl("d4|c4|g3|nf3", games$opening_name, ignore.case = TRUE), "defensive","other"))
+
+# Create a hexbin plot with different shapes for offensive and defensive players
+hexbin_plot <- ggplot(games, aes(x = white_rating, y = black_rating, shape = player_style)) +
+  geom_hex(bins = 30, color = "white") +
+  scale_fill_gradientn(colors = c("white", "blue")) +
+  scale_shape_manual(values = c("offensive" = 17, "defensive" = 16, "other" = 1)) +
+  theme_classic() +
+  labs(title = "Hexbin Plot of Player Ratings by Playing Style", x = "White Player Rating", y = "Black Player Rating")
+
+print(hexbin_plot)
+```
+
+---
+
+
+Range Of Player's Rating:The scatter plot visualizes the relationship between white and black player ratings, with winner outcomes indicated by color. The histogram provides an overview of the distribution of player ratings, contributing to an understanding of the skill levels across games.alse we can see outlier spots.but in my idea using hexbin here is better because by showing the density of most of players range we can earn the quality of games for analyze.
+```{r}
+library(hexbin)
+library(ggplot2)
+
+# Create a new column for player style if not already created
+games$player_style <- ifelse(grepl("e4|b4", games$opening_name, ignore.case = TRUE), "offensive",
+                              ifelse(grepl("d4|c4|g3|nf3", games$opening_name, ignore.case = TRUE), "defensive","other"))
+
+# Create a hexbin plot with different shapes for offensive and defensive players
+hexbin_plot <- ggplot(games, aes(x = white_rating, y = black_rating, shape = player_style)) +
+  geom_hex(bins = 30, color = "white") +
+  scale_fill_gradientn(colors = c("white", "blue")) +
+  scale_shape_manual(values = c("offensive" = 17, "defensive" = 16, "other" = 1)) +
+  theme_classic() +
+  labs(title = "Hexbin Plot of Player Ratings by Playing Style", x = "White Player Rating", y = "Black Player Rating")
+
+print(hexbin_plot)
+```
+
+```{r}
+
+library(ggplot2)
+library(dplyr)
+
+# Create a new column for victory status based on playing style
+games <- games %>%
+  mutate(victory_style = ifelse(victory_status == "mate" & player_style == "offensive", "Victory (Offensive)",
+                               ifelse(victory_status == "mate" & player_style == "defensive", "Victory (Defensive)",
+                                      ifelse(victory_status == "draw", "Draw", "Loss"))))
+
+# Create a bar plot
+ggplot(games, aes(x = victory_style, fill = player_style)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Victory Status Based on Playing Style",
+       x = "Victory Status",
+       y = "Count") +
+  scale_fill_manual(values = c("offensive" = "#ffcc66", "defensive" = "#6699ff", "other" = "#cccccc")) +
+  theme_minimal()
+
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Create a new column for victory status based on playing style
+games <- games %>%
+  mutate(victory_style = ifelse(victory_status == "mate" & (player_style == "offensive" | player_style == "defensive"), "Victory",
+                               ifelse(victory_status == "draw", "Draw", "Loss")))
+
+ggplot(games, aes(x = victory_style, fill = player_style)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Victory Status Based on Playing Style",
+       x = "Victory Status",
+       y = "Count") +
+  scale_fill_manual(values = c("offensive" = "#ffcc66", "defensive" = "#6699ff", "other" = "#cccccc")) +
+  theme_minimal()
+
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Create a new column for victory status based on playing style
+games <- games %>%
+  mutate(victory_style = ifelse(victory_status == "mate" & (player_style == "offensive" | player_style == "defensive"), "Victory",
+                               ifelse(victory_status == "draw", "Draw", "Loss")))
+
+# Create a bar plot with chess-piece colors
+ggplot(games, aes(x = victory_style, fill = player_style)) +
+  geom_bar(position = "dodge") +
+  labs(title = "Victory Status Based on Playing Style",
+       x = "Victory Status",
+       y = "Count") +
+  scale_fill_manual(values = c("offensive" = "#ffcc66", "defensive" = "#6699ff", "other" = "#cccccc")) +
+  theme_minimal()
+
+```
+
+
+
+
+
+
