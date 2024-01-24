@@ -16,6 +16,7 @@ Quarto enables you to weave together content and executable code into a finished
 ```{r}
 library(readr)
 library(dplyr)
+
 games<- read_csv("new_games.csv")
 # games
 
@@ -306,18 +307,14 @@ ggplot(games, aes(x = victory_style, fill = player_style)) +
 
 
 ```{r}
-
-# Assuming your data frame is named 'games'
 library(ggplot2)
 library(dplyr)
 
 # Filter increments with count > 200
 increment <- filter(summarise(group_by(games, increment_code), count = n()), count > 200)
 
-# Filter games based on selected increments
 filtered_games <- games[games$increment_code %in% increment$increment_code, ]
 
-# Create a bar plot
 ggplot(filtered_games, aes(x = increment_code)) +
   geom_bar(fill = "skyblue", color = "black") +
   labs(title = "Time Control Distribution",
@@ -486,4 +483,100 @@ new_games %>%
 
 ```
 
+```{r}
+
+library(tidyverse)
+library(forcats)
+
+# Top 10 openings with count > 200
+opening <- filter(summarise(group_by(games, opening_name), count = n()), count > 200)
+
+# Reorder data with fct_reorder function
+opening <- opening %>% mutate(opening_name = fct_reorder(opening_name, count, .desc = TRUE))
+
+ggplot(opening, aes(x = opening_name, y = count)) +
+  geom_col(fill = "skyblue") +
+  geom_text(aes(label = count), vjust = -0.5, color = "black", size = 3) +  
+  theme_minimal() +
+  labs(title = "Top 10 Openings", x = "Opening Name", y = "Count") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  
+  coord_cartesian(ylim = c(0, max(opening$count) + 10))  
+
+
+```
+```{r}
+library(dplyr)
+library(ggplot2)
+
+#My desired order of levels
+desired_order <- c("Fair", "Aggressive", "Assertive", "Unfair")
+
+new_games %>%
+  mutate(diff = abs(white_rating - black_rating),
+         classdif = case_when(
+           diff %/% 412 == 0 ~ "Fair",
+           diff %/% 412 == 1 ~ "Aggressive",
+           diff %/% 412 == 2 ~ "Assertive",
+           diff %/% 412 == 3 ~ "Unfair",
+           TRUE ~ as.character(diff %/% 412)
+         )) %>%
+  ggplot(aes(x = factor(classdif, levels = desired_order), y = turns)) +
+  geom_violin(fill = "skyblue", color = "blue", alpha = 0.7) +
+  geom_boxplot(width = 0.1, fill = "orange", color = "darkred", alpha = 0.7) +
+  labs(title = "Violin Plot", x = "Class Difference", y = "Time Control") +
+  theme_minimal()
+
+
+```
+```{r}
+library(dplyr)
+library(ggplot2)
+
+# Filter and summarize data
+increment <- filter(summarise(group_by(games, increment_code), count = n()), count > 200)
+
+# Arrange levels in descending order
+increment <- increment %>% arrange(desc(count))
+
+# Create a bar plot with sky blue color
+ggplot(increment, aes(x = factor(increment_code, levels = increment_code), y = count)) +
+  geom_col(fill = "skyblue") +
+  labs(title = "Time Control") +
+  theme_minimal()
+
+```
+```{r}
+library(tidyverse)
+library(forcats)
+
+# Top 10 openings with count > 200
+opening <- filter(summarise(group_by(games, opening_name), count = n()), count > 200)
+
+
+opening <- opening %>% mutate(opening_name = fct_reorder(opening_name, count, .desc = TRUE))
+
+ggplot(opening, aes(x = count, y = fct_rev(opening_name))) +
+  geom_col(fill = "skyblue") +
+  geom_text(aes(label = count), hjust = -0.2, color = "black", size = 3) +  
+  theme_minimal() +
+  labs(title = "Top 10 Openings", x = "Count", y = "Opening Name") +
+  theme(axis.text.y = element_text(angle = 0, hjust = 1)) +  
+  coord_cartesian(xlim = c(0, max(opening$count) + 10))  # Adjust the x-axis limits to provide space for labels
+
+```
+```{r}
+library(dplyr)
+library(ggplot2)
+
+increment <- filter(summarise(group_by(games, increment_code), count = n()), count > 200)
+
+increment <- increment %>% arrange(desc(count))
+
+ggplot(increment, aes(x = factor(increment_code, levels = increment$increment_code), y = count)) +
+  geom_col(fill = "skyblue") +
+  labs(title = "Time Control", x = "Increment_Code", y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))  
+
+```
 

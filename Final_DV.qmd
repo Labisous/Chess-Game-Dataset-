@@ -11,6 +11,7 @@ library(dplyr)
 library(ggplot2)
 games<- read_csv("new_games.csv")
 ```
+
 ```{r, warning=FALSE}
 #In lichess.com mostly players play rating games
 
@@ -35,21 +36,28 @@ ggplot(df_percentage, aes(x = type_label, y = percentage, fill = type_label)) +
   theme_minimal()
 
 ```
+
 # 
 
 ```{r}
+library(tidyverse)
+library(forcats)
+
 # Top 10 openings with count > 200
 opening <- filter(summarise(group_by(games, opening_name), count = n()), count > 200)
 
-# Create a bar plot with labels
-ggplot(opening, aes(x = opening_name, y = count)) +
+
+opening <- opening %>% mutate(opening_name = fct_reorder(opening_name, count, .desc = TRUE))
+
+ggplot(opening, aes(x = count, y = fct_rev(opening_name))) +
   geom_col(fill = "skyblue") +
-  geom_text(aes(label = count), vjust = -0.5, color = "black", size = 3) +  # Add labels above the bars
+  geom_text(aes(label = count), hjust = -0.2, color = "black", size = 3) +  
   theme_minimal() +
-  labs(title = "Top 10 Openings", x = "Opening Name", y = "Count") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +  # Rotate x-axis labels for better readability
-  coord_cartesian(ylim = c(0, max(opening$count) + 10))  # Adjust the y-axis limits to provide space for labels
+  labs(title = "Top 10 Openings", x = "Count", y = "Opening Name") +
+  theme(axis.text.y = element_text(angle = 0, hjust = 1)) +  
+  coord_cartesian(xlim = c(0, max(opening$count) + 10))  # Adjust the x-axis limits to provide space for labels
 ```
+
 # 
 
 ```{r}
@@ -97,12 +105,15 @@ ggplot(plot_df, aes(x = Playing_Style, y = Count, fill = Playing_Style)) +
   scale_fill_manual(values = chess_colors)  # Apply custom colors
 
 ```
+
 # 
 
 ```{r}
 library(dplyr)
 library(ggplot2)
 
+#My desired order of levels
+desired_order <- c("Fair", "Aggressive", "Assertive", "Unfair")
 games<- read_csv("new_games.csv")
 games %>%
   mutate(diff = abs(white_rating - black_rating),
@@ -113,12 +124,13 @@ games %>%
            diff %/% 412 == 3 ~ "Unfair",
            TRUE ~ as.character(diff %/% 412)
          )) %>%
-  ggplot(aes(x = as.factor(classdif), y = turns)) +
+  ggplot(aes(x = factor(classdif, levels = desired_order), y = turns)) +
   geom_violin(fill = "skyblue", color = "blue", alpha = 0.7) +
   geom_boxplot(width = 0.1, fill = "orange", color = "darkred", alpha = 0.7) +
-  labs(title = "Violin Plot", x = "Class Difference", y = "Time Control") +
+  labs(title = "Violin Plot", x = "Class Difference", y = "Turns") +
   theme_minimal()
 ```
+
 # 
 
 ```{r}
@@ -132,7 +144,6 @@ ggplot(games, aes(x = victory_status, fill = winner)) +
 # 
 
 ```{r}
-# Load the necessary libraries
 library(ggplot2)
 library(dplyr)
 
@@ -141,7 +152,7 @@ games <- games %>%
   mutate(victory_style = ifelse(victory_status == "mate" & (player_style == "offensive" | player_style == "defensive"), "Victory",
                                ifelse(victory_status == "draw", "Draw", "Loss")))
 
-# Create a bar plot
+
 ggplot(games, aes(x = victory_style, fill = player_style)) +
   geom_bar(position = "dodge") +
   labs(title = "Victory Status Based on Playing Style",
@@ -155,10 +166,18 @@ ggplot(games, aes(x = victory_style, fill = player_style)) +
 # 
 
 ```{r}
-# 10+0 increment is most often played
-increment<-filter(summarise(group_by(games,increment_code), count=length(increment_code)),count>200)
-ggplot(increment,aes(x=increment_code,y=count))+geom_col()+
-  labs(title = "Time Control") 
+library(dplyr)
+library(ggplot2)
+
+increment <- filter(summarise(group_by(games, increment_code), count = n()), count > 200)
+
+increment <- increment %>% arrange(desc(count))
+
+ggplot(increment, aes(x = factor(increment_code, levels = increment$increment_code), y = count)) +
+  geom_col(fill = "skyblue") +
+  labs(title = "Time Control", x = "Increment_Code", y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 ```
 
 # 
@@ -181,3 +200,7 @@ hexbin_plot <- ggplot(games, aes(x = white_rating, y = black_rating, shape = pla
 
 print(hexbin_plot)
 ```
+
+
+
+
